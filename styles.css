@@ -73,8 +73,8 @@ button, .option-button { touch-action: manipulation; }
   padding: 20px 34px 18px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 30px;
+  justify-content: space-between;
+  gap: 20px;
   border-bottom: 1px solid var(--line);
   background: rgba(251, 250, 246, .96);
 }
@@ -83,7 +83,7 @@ button, .option-button { touch-action: manipulation; }
 .national-logo-wrap { width:260px; background:var(--green-dark); padding:8px 12px; border-radius:4px; }
 .ministry-logo { width:235px; height:72px; object-fit:contain; }
 .national-logo { width:236px; height:54px; object-fit:contain; }
-.brand-divider { width:1px; height:48px; background: var(--line); flex:0 0 1px; }
+.brand-divider { display:none; }
 
 .screen {
   position: absolute;
