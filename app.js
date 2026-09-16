@@ -705,7 +705,7 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   }
 
   async function init() {
-    if (location.pathname.replace(/\/+$/, "") === "/display") {
+    if (location.pathname.replace(/\/+$/, "") === "/display" || new URLSearchParams(location.search).get("view") === "display") {
       await initDisplay();
       return;
     }
