@@ -1,16 +1,6 @@
-const CACHE = "quality96-v12";
-const LOCAL_ASSETS = [
-  "./",
-  "./index.html",
-  "./styles.css",
-  "./app.js",
-  "./config.js",
-  "./manifest.json",
-  "./assets/hrsd-logo.png",
-  "./assets/national-day-96-logo.webp"
-];
+const CACHE = "quality96-v13";
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(LOCAL_ASSETS)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.add("./")).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (event) => {
   event.waitUntil(

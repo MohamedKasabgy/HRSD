@@ -95,6 +95,9 @@
       </div>
 
       <div class="result-participant">المشاركة رقم <strong id="participantNumber">1</strong> من الهدف 96</div>
+      <div id="resultComparison" class="result-comparison" hidden>
+        <span>متوسط المشاركين <strong id="groupAverage">0</strong> / 96</span>
+      </div>
       <button id="finishBtn" class="primary-button" type="button">إنهاء التجربة</button>
       <div id="autoResetText" class="auto-reset">ستعود الشاشة تلقائيًا خلال 15 ثانية</div>
     </section>
@@ -132,10 +135,30 @@
     </footer>
   </main>
 
+  <main id="displayApp" class="display-app" aria-live="polite" hidden>
+    <header class="display-header">
+      <img class="display-ministry-logo" src="assets/hrsd-logo.png" alt="شعار وزارة الموارد البشرية والتنمية الاجتماعية" />
+      <div class="display-title"><h1>غرفة التحكم بأداء وطن</h1><p>تحدي الـ 96 ثانية</p></div>
+      <img class="display-national-logo" src="assets/national-day-96-logo.webp" alt="شعار اليوم الوطني السعودي 96" />
+    </header>
+    <section class="display-stage">
+      <div class="display-count"><strong id="displayCount">0</strong><span>/ 96</span><p>مشارك أكمل تحدي الـ 96 ثانية</p></div>
+      <div class="display-stats" aria-label="إحصاءات التحدي">
+        <div><span>متوسط مؤشر الجودة</span><strong id="displayAverage">—</strong><small>/ 96</small></div>
+        <div><span>أعلى نتيجة</span><strong id="displayHigh">—</strong><small>/ 96</small></div>
+        <div><span>أكثر بصمة ظهورًا</span><strong id="displayTrait">—</strong></div>
+      </div>
+      <div id="completionMessage" class="completion-message" hidden><strong>اكتمل التحدي 🇸🇦</strong><span>96 مشاركًا</span></div>
+      <div id="participantGrid" class="participant-grid" aria-label="شبكة المشاركين من 1 إلى 96"></div>
+      <section class="display-distribution"><h2>توزيع البصمات</h2><div id="displayTraits"></div></section>
+    </section>
+    <button id="displayFullscreenBtn" class="display-fullscreen" type="button">ملء الشاشة</button>
+    <p id="displayStatus" class="display-status">جاري الاتصال بالبيانات المركزية…</p>
+  </main>
+
   <div id="toast" class="toast" role="status"></div>
   <input id="restoreInput" type="file" accept="application/json,.json" hidden />
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

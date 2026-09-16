@@ -1,7 +1,10 @@
+import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
+
 (() => {
   "use strict";
 
-  const TARGET = 96;
+  const MAX_PARTICIPANTS = 96;
+  const TARGET = MAX_PARTICIPANTS;
   const TOTAL_SECONDS = 96;
   const AUTO_RESET_SECONDS = 15;
   const DB_NAME = "quality96DB";
@@ -82,6 +85,9 @@
   let autoResetId = null;
   let adminTapCount = 0;
   let adminTapTimer = null;
+  let cloudParticipants = [];
+  let currentSessionId = null;
+  let completionInProgress = false;
 
   function showScreen(id) {
     screens.forEach((screenId) => {
@@ -166,7 +172,7 @@
   }
 
   function participantCount() {
-    return Math.max(0, submissions.length + participantAdjustment);
+    return isSupabaseConfigured ? cloudParticipants.length : Math.max(0, submissions.length + participantAdjustment);
   }
 
   async function loadSubmissions() {
@@ -181,45 +187,63 @@
     updateCounters();
   }
 
+  async function refreshCentralParticipants() {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from("participants")
+      .select("id, participant_number, score, quality_type, answers, completed_at, session_id")
+      .order("participant_number", { ascending: true });
+    if (error) throw error;
+    cloudParticipants = data || [];
+    updateCounters();
+    return cloudParticipants;
+  }
+
   async function saveSubmission(item) {
+    // يحتفظ الجهاز بالنتيجة فقط كـ pending إذا تعذر الاتصال؛ العداد العام لا يتغير قبل نجاح RPC.
+    if (!supabase) {
+      item.pending = true;
+      submissions.push(item);
+      writeBackup();
+      await putDB(item);
+      return { ...item, participant_number: participantCount() };
+    }
+    const { data, error } = await supabase.rpc("complete_participant", {
+      p_session_id: item.session_id,
+      p_score: item.score96,
+      p_quality_type: item.traitTitle,
+      p_answers: item.answers
+    });
+    if (error) throw error;
+    const saved = data?.[0];
+    if (!saved) throw new Error("No participant returned from submission");
+    item.pending = false;
+    item.participant_number = saved.participant_number;
     submissions.push(item);
     writeBackup();
     await putDB(item);
-    updateCounters();
-    syncToCloud(item).catch(() => {});
+    await refreshCentralParticipants();
+    return saved;
   }
 
-  async function syncFromCloud() {
-    const cfg = window.QUALITY96_CONFIG || {};
-    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return [];
-    try {
-      const endpoint = `${cfg.supabaseUrl.replace(/\/$/, "")}/rest/v1/${encodeURIComponent(cfg.table || "quality96_submissions")}?select=*`;
-      const res = await fetch(endpoint, {
-        headers: {
-          "apikey": cfg.supabaseAnonKey,
-          "Authorization": `Bearer ${cfg.supabaseAnonKey}`
-        }
-      });
-      if (!res.ok) return [];
-      return await res.json();
-    } catch { return []; }
-  }
-
-  async function syncToCloud(item) {
-    const cfg = window.QUALITY96_CONFIG || {};
-    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return;
-    const endpoint = `${cfg.supabaseUrl.replace(/\/$/, "")}/rest/v1/${encodeURIComponent(cfg.table || "quality96_submissions")}`;
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": cfg.supabaseAnonKey,
-        "Authorization": `Bearer ${cfg.supabaseAnonKey}`,
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify(item)
-    });
-    if (!res.ok) throw new Error("cloud sync failed");
+  async function retryPendingSubmissions() {
+    if (!supabase) return;
+    for (const item of submissions.filter((submission) => submission.pending && submission.session_id)) {
+      try {
+        const { data, error } = await supabase.rpc("complete_participant", {
+          p_session_id: item.session_id,
+          p_score: item.score96,
+          p_quality_type: item.traitTitle,
+          p_answers: item.answers
+        });
+        if (error || !data?.[0]) throw error || new Error("No participant returned from pending submission");
+        const saved = data[0];
+        item.pending = false;
+        item.participant_number = saved.participant_number;
+      } catch (error) { console.warn("Pending participant sync failed", error); }
+    }
+    writeBackup();
+    await refreshCentralParticipants();
   }
 
   function updateCounters() {
@@ -270,8 +294,15 @@
     }
   }
 
-  function startChallenge() {
+  async function startChallenge() {
+    if (supabase) {
+      try { await refreshCentralParticipants(); }
+      catch (error) { console.warn("Unable to refresh participant count", error); toast("تعذر التحقق من حالة التحدي الآن"); return; }
+      if (participantCount() >= MAX_PARTICIPANTS) { toast("اكتمل تحدي الـ 96 مشاركًا"); return; }
+    }
     clearTimeout(autoResetId);
+    currentSessionId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    completionInProgress = false;
     currentQuestion = 0;
     answers = [];
     remaining = TOTAL_SECONDS;
@@ -354,11 +385,14 @@
   }
 
   async function completeChallenge(timedOut) {
+    if (completionInProgress) return;
+    completionInProgress = true;
     clearInterval(timerId);
     const { score96, traitKey } = calculateResult();
     const durationSeconds = Math.min(TOTAL_SECONDS, Math.max(1, Math.round((Date.now() - startedAt) / 1000)));
     const item = {
-      id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+      id: currentSessionId,
+      session_id: currentSessionId,
       createdAt: new Date().toISOString(),
       score96,
       trait: traitKey,
@@ -367,8 +401,24 @@
       timedOut: !!timedOut,
       answers: answers.map(({ questionIndex, category, optionIndex, weight, responseMs }) => ({ questionIndex, category, optionIndex, weight, responseMs }))
     };
-    await saveSubmission(item);
-    renderResult(item);
+    try {
+      const saved = await saveSubmission(item);
+      item.participant_number = saved.participant_number;
+      renderResult(item);
+    } catch (error) {
+      console.error("Participant submission failed", error);
+      if (String(error.message || error).includes("MAX_PARTICIPANTS_REACHED")) {
+        toast("اكتمل تحدي الـ 96 مشاركًا");
+        resetToHome();
+      } else {
+        toast("تعذر حفظ النتيجة الآن. ستتم المحاولة تلقائيًا عند عودة الاتصال.");
+        item.pending = true;
+        submissions.push(item);
+        writeBackup();
+        await putDB(item);
+        renderResult(item);
+      }
+    } finally { completionInProgress = false; }
   }
 
   function renderResult(item) {
@@ -377,7 +427,12 @@
     $("traitTitle").textContent = trait.title;
     $("traitDescription").textContent = trait.description;
     $("traitIcon").textContent = trait.mark;
-    $("participantNumber").textContent = Math.min(participantCount(), TARGET);
+    $("participantNumber").textContent = item.participant_number || "—";
+    const average = cloudParticipants.length
+      ? Math.round(cloudParticipants.reduce((sum, participant) => sum + participant.score, 0) / cloudParticipants.length)
+      : null;
+    $("resultComparison").hidden = average === null;
+    if (average !== null) $("groupAverage").textContent = average;
     const circumference = 2 * Math.PI * 92;
     const offset = circumference * (1 - item.score96 / 96);
     $("scoreRing").style.strokeDasharray = circumference.toFixed(2);
@@ -408,6 +463,71 @@
     currentQuestion = 0;
     updateCounters();
     showScreen("homeScreen");
+  }
+
+  function renderDisplay(rows, newlyCompletedNumber = null) {
+    const count = rows.length;
+    const scores = rows.map((row) => Number(row.score) || 0);
+    const average = count ? Math.round(scores.reduce((sum, score) => sum + score, 0) / count) : 0;
+    const highest = count ? Math.max(...scores) : 0;
+    const distribution = Object.fromEntries(Object.values(traits).map((trait) => [trait.title, 0]));
+    rows.forEach((row) => { if (distribution[row.quality_type] !== undefined) distribution[row.quality_type] += 1; });
+    const leading = Object.entries(distribution).sort((a, b) => b[1] - a[1])[0];
+
+    $("displayCount").textContent = count;
+    $("displayAverage").textContent = count ? average : "—";
+    $("displayHigh").textContent = count ? highest : "—";
+    $("displayTrait").textContent = count && leading?.[1] ? leading[0] : "—";
+    $("completionMessage").hidden = count < MAX_PARTICIPANTS;
+
+    const grid = $("participantGrid");
+    grid.innerHTML = "";
+    for (let number = 1; number <= MAX_PARTICIPANTS; number += 1) {
+      const cell = document.createElement("div");
+      cell.className = `participant-cell${number <= count ? " is-complete" : ""}${number === newlyCompletedNumber ? " is-new" : ""}`;
+      cell.textContent = number;
+      grid.appendChild(cell);
+    }
+    const traitsBox = $("displayTraits");
+    traitsBox.innerHTML = "";
+    Object.entries(distribution).forEach(([name, value]) => {
+      const row = document.createElement("div");
+      const percentage = count ? (value / count) * 100 : 0;
+      row.className = "display-trait-row";
+      row.innerHTML = `<span></span><i><b></b></i><strong>${value}</strong>`;
+      row.querySelector("span").textContent = name;
+      row.querySelector("b").style.width = `${percentage}%`;
+      traitsBox.appendChild(row);
+    });
+  }
+
+  async function initDisplay() {
+    $("app").hidden = true;
+    $("displayApp").hidden = false;
+    const status = $("displayStatus");
+    const setStatus = (message) => { status.textContent = message; };
+    if (!supabase) { setStatus("لم يتم إعداد الاتصال بالبيانات المركزية بعد."); renderDisplay([]); return; }
+    const sync = async () => {
+      try { await refreshCentralParticipants(); renderDisplay(cloudParticipants); setStatus("يتم التحديث تلقائيًا"); }
+      catch (error) { console.warn("Display sync failed", error); setStatus("سيُعاد الاتصال تلقائيًا…"); }
+    };
+    await sync();
+    const channel = supabase.channel("participants-display")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "participants" }, (payload) => {
+        const row = payload.new;
+        if (!cloudParticipants.some((participant) => participant.id === row.id)) {
+          cloudParticipants = [...cloudParticipants, row].sort((a, b) => a.participant_number - b.participant_number);
+          renderDisplay(cloudParticipants, row.participant_number);
+          setStatus("تم التحديث الآن");
+        }
+      })
+      .subscribe((state) => { if (state === "SUBSCRIBED") setStatus("يتم التحديث تلقائيًا"); });
+    setInterval(sync, 12000);
+    $("displayFullscreenBtn").addEventListener("click", async () => {
+      await enterFullscreen();
+      $("displayFullscreenBtn").classList.add("is-muted");
+    });
+    window.addEventListener("beforeunload", () => { supabase.removeChannel(channel); });
   }
 
   function renderAdmin() {
@@ -548,7 +668,7 @@
   function bindEvents() {
     $("startBtn").addEventListener("click", async () => {
       await enterFullscreen();
-      startChallenge();
+      await startChallenge();
     });
     $("finishBtn").addEventListener("click", resetToHome);
     $("fullscreenBtn").addEventListener("click", enterFullscreen);
@@ -585,17 +705,16 @@
   }
 
   async function init() {
+    if (location.pathname.replace(/\/+$/, "") === "/display") {
+      await initDisplay();
+      return;
+    }
     db = await openDB();
     participantAdjustment = readParticipantAdjustment();
     await loadSubmissions();
-    const cloudRows = await syncFromCloud();
-    if (cloudRows.length) {
-      const merged = new Map(submissions.map((x) => [x.id, x]));
-      cloudRows.forEach((x) => merged.set(x.id, x));
-      submissions = Array.from(merged.values()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      writeBackup();
-      for (const item of submissions) await putDB(item);
-      updateCounters();
+    if (supabase) {
+      try { await refreshCentralParticipants(); await retryPendingSubmissions(); }
+      catch (error) { console.warn("Supabase initial sync failed", error); toast("تعمل الشاشة محليًا حتى يعود الاتصال بالبيانات المركزية"); }
     }
     bindEvents();
     updateFullscreenButton();
