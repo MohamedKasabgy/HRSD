@@ -82,7 +82,22 @@ $$;
 revoke all on function public.complete_participant(text, integer, text, jsonb) from public;
 grant execute on function public.complete_participant(text, integer, text, jsonb) to anon;
 
--- فعّل بث INSERT اللحظي للعرض الخارجي.
+-- تصفير مركزي بسيط لزر لوحة المشرف. لا توجد حماية إضافية بطلب صاحب المشروع.
+create or replace function public.reset_participants()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.participants;
+end;
+$$;
+
+revoke all on function public.reset_participants() from public;
+grant execute on function public.reset_participants() to anon;
+
+-- فعّل بث INSERT وDELETE اللحظي للعرض الخارجي.
 do $$ begin
   alter publication supabase_realtime add table public.participants;
 exception when duplicate_object then null;

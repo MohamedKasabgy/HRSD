@@ -513,12 +513,14 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     };
     await sync();
     const channel = supabase.channel("participants-display")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "participants" }, (payload) => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "participants" }, (payload) => {
         const row = payload.new;
-        if (!cloudParticipants.some((participant) => participant.id === row.id)) {
+        if (payload.eventType === "INSERT" && !cloudParticipants.some((participant) => participant.id === row.id)) {
           cloudParticipants = [...cloudParticipants, row].sort((a, b) => a.participant_number - b.participant_number);
           renderDisplay(cloudParticipants, row.participant_number);
           setStatus("تم التحديث الآن");
+        } else if (payload.eventType === "DELETE") {
+          sync();
         }
       })
       .subscribe((state) => { if (state === "SUBSCRIBED") setStatus("يتم التحديث تلقائيًا"); });
@@ -655,6 +657,15 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   async function resetAll() {
     const code = prompt("لتأكيد حذف جميع النتائج اكتب: 96");
     if (code !== "96") return;
+    if (supabase) {
+      const { error } = await supabase.rpc("reset_participants");
+      if (error) {
+        console.error("Central reset failed", error);
+        toast("تعذر تصفير العداد المركزي الآن");
+        return;
+      }
+      cloudParticipants = [];
+    }
     submissions = [];
     participantAdjustment = 0;
     writeBackup();
