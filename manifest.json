@@ -1,0 +1,11 @@
+{
+  "name": "غرفة التحكم بأداء وطن — تحدي 96 ثانية",
+  "short_name": "تحدي 96",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fbfaf6",
+  "theme_color": "#0a3f36",
+  "orientation": "portrait"
+}

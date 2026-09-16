@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a3f36" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>غرفة التحكم بأداء وطن | تحدي 96 ثانية</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="app" class="app-shell" aria-live="polite">
+    <header class="brandbar">
+      <div class="logo-box ministry-logo-wrap" title="وزارة الموارد البشرية والتنمية الاجتماعية">
+        <img
+          class="ministry-logo"
+          src="assets/hrsd-logo.png"
+          alt="شعار وزارة الموارد البشرية والتنمية الاجتماعية"
+          draggable="false"
+        />
+      </div>
+      <div class="brand-divider" aria-hidden="true"></div>
+      <div class="logo-box national-logo-wrap" title="اليوم الوطني السعودي 96">
+        <img
+          class="national-logo"
+          src="assets/national-day-96-logo.webp"
+          alt="شعار اليوم الوطني السعودي 96 عزنا بطبعنا"
+          draggable="false"
+        />
+      </div>
+    </header>
+
+    <section id="homeScreen" class="screen home-screen is-active">
+      <div class="home-copy">
+        <p class="eyebrow">وحدة الأداء والجودة | فرع الوزارة بمنطقة مكة المكرمة</p>
+        <h1>غرفة التحكم<br><span>بأداء وطن</span></h1>
+        <div class="challenge-lockup" aria-label="تحدي 96 ثانية">
+          <span class="challenge-number">96</span>
+          <span class="challenge-text">ثانية</span>
+        </div>
+        <p class="lead">5 مواقف قصيرة من بيئة العمل. اختر القرار الأقرب لك واكتشف بصمتك في الجودة.</p>
+      </div>
+
+      <button id="startBtn" class="primary-button" type="button">
+        <span>ابدأ التحدي</span>
+        <span class="button-arrow" aria-hidden="true">←</span>
+      </button>
+      <p class="touch-hint">المس للبدء</p>
+
+      <div class="counter-card" aria-label="عداد المشاركين">
+        <div class="counter-label">المشاركون</div>
+        <div class="counter-value"><span id="homeCount">0</span><span class="counter-total">/ 96</span></div>
+        <div class="progress-track"><span id="homeProgress"></span></div>
+        <div id="targetState" class="counter-note">الهدف: 96 مشاركة</div>
+      </div>
+    </section>
+
+    <section id="quizScreen" class="screen quiz-screen" aria-hidden="true">
+      <div class="quiz-meta">
+        <div class="question-index">الموقف <strong id="questionNumber">1</strong> من 5</div>
+        <div id="timer" class="timer" aria-label="الوقت المتبقي"><span id="timerValue">96</span><small>ث</small></div>
+      </div>
+      <div class="step-track"><span id="stepProgress"></span></div>
+
+      <article class="question-panel">
+        <div id="questionCategory" class="category-pill">الكفاءة</div>
+        <h2 id="questionText"></h2>
+        <div id="options" class="options" role="group" aria-label="خيارات الإجابة"></div>
+      </article>
+
+      <div class="quiz-footer">
+        <span>اختر إجابة واحدة</span>
+      </div>
+    </section>
+
+    <section id="resultScreen" class="screen result-screen" aria-hidden="true">
+      <div class="result-kicker">بصمتك في الجودة</div>
+      <div class="score-wrap">
+        <svg class="score-ring" viewBox="0 0 220 220" role="img" aria-label="مؤشر الجودة">
+          <circle class="score-ring-bg" cx="110" cy="110" r="92"></circle>
+          <circle id="scoreRing" class="score-ring-value" cx="110" cy="110" r="92"></circle>
+        </svg>
+        <div class="score-center">
+          <strong id="scoreValue">0</strong>
+          <span>من 96</span>
+        </div>
+      </div>
+      <div class="score-label">مؤشر الأداء والجودة</div>
+
+      <div class="trait-card">
+        <div id="traitIcon" class="trait-mark" aria-hidden="true">◆</div>
+        <h2 id="traitTitle">صانع الأثر</h2>
+        <p id="traitDescription"></p>
+      </div>
+
+      <div class="result-participant">المشاركة رقم <strong id="participantNumber">1</strong> من الهدف 96</div>
+      <button id="finishBtn" class="primary-button" type="button">إنهاء التجربة</button>
+      <div id="autoResetText" class="auto-reset">ستعود الشاشة تلقائيًا خلال 15 ثانية</div>
+    </section>
+
+    <section id="adminScreen" class="screen admin-screen" aria-hidden="true">
+      <div class="admin-header">
+        <div>
+          <p class="eyebrow">لوحة المشرف</p>
+          <h2>ملخص تحدي 96</h2>
+        </div>
+        <button id="closeAdminBtn" class="icon-button" type="button" aria-label="إغلاق">×</button>
+      </div>
+      <div class="admin-grid">
+        <div class="stat-box"><span>إجمالي المشاركات</span><strong id="adminTotal">0</strong></div>
+        <div class="stat-box"><span>متوسط المؤشر</span><strong><span id="adminAverage">0</span>/96</strong></div>
+      </div>
+      <div class="trait-stats" id="traitStats"></div>
+      <div class="admin-actions">
+        <button id="exportBtn" class="secondary-button" type="button">تصدير النتائج CSV</button>
+        <button id="backupBtn" class="secondary-button" type="button">تنزيل نسخة احتياطية</button>
+        <button id="restoreBtn" class="secondary-button" type="button">استعادة نسخة احتياطية</button>
+        <button id="editCountBtn" class="secondary-button" type="button">تعديل إجمالي المشاركات</button>
+        <button id="fullscreenAdminBtn" class="secondary-button" type="button">ملء الشاشة</button>
+        <button id="resetBtn" class="danger-button" type="button">تصفير جميع النتائج</button>
+      </div>
+      <p class="admin-note">النتائج محفوظة تلقائيًا على هذا الجهاز. نزّل نسخة احتياطية للاحتفاظ بها خارج المتصفح.</p>
+    </section>
+
+    <footer class="bottom-bar">
+      <button id="fullscreenBtn" class="fullscreen-button" type="button" aria-label="تشغيل ملء الشاشة">
+        <span aria-hidden="true">⛶</span>
+        <span>ملء الشاشة</span>
+      </button>
+      <button id="adminTrigger" class="admin-trigger" type="button" aria-label="فتح لوحة المشرف">96</button>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <input id="restoreInput" type="file" accept="application/json,.json" hidden />
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
