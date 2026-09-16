@@ -90,7 +90,8 @@ security definer
 set search_path = public
 as $$
 begin
-  delete from public.participants;
+  -- شرط صريح مطلوب من حماية Supabase، ويطابق كل المشاركات الفعلية.
+  delete from public.participants where id is not null;
 end;
 $$;
 
