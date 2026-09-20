@@ -678,7 +678,6 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
 
   function bindEvents() {
     $("startBtn").addEventListener("click", async () => {
-      await enterFullscreen();
       await startChallenge();
     });
     $("finishBtn").addEventListener("click", resetToHome);

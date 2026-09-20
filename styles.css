@@ -163,9 +163,10 @@ h1 span { color:var(--green); }
 .option-text { font-size:clamp(17px,2vh,23px); line-height:1.6; font-weight:700; }
 .quiz-footer { display:flex; align-items:center; justify-content:space-between; margin-top:20px; font-size:14px; color:#7b8783; }
 
-.result-screen { justify-content:center; align-items:center; text-align:center; gap:14px; }
-.result-kicker { font-size:18px; color:var(--green); font-weight:800; }
-.score-wrap { position:relative; width:clamp(190px,25vh,250px); aspect-ratio:1; }
+.result-screen { justify-content:flex-start; align-items:center; text-align:center; gap:clamp(12px,1.7vh,22px); padding-top:clamp(28px,4.2vh,58px); padding-bottom:clamp(24px,3.2vh,46px); }
+.result-screen > * { flex:0 0 auto; }
+.result-kicker { margin:0; font-size:clamp(17px,2.1vh,23px); line-height:1.35; color:var(--green); font-weight:800; }
+.score-wrap { position:relative; width:clamp(185px,24vh,250px); aspect-ratio:1; margin:clamp(4px,.8vh,10px) 0; }
 .score-ring { width:100%; height:100%; transform:rotate(-90deg); }
 .score-ring-bg, .score-ring-value { fill:none; stroke-width:12; }
 .score-ring-bg { stroke:#e2e8e5; }
@@ -173,17 +174,17 @@ h1 span { color:var(--green); }
 .score-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .score-center strong { font-size:clamp(58px,7vh,82px); line-height:.9; color:var(--green-dark); letter-spacing:-.05em; }
 .score-center span { margin-top:8px; color:#6d7975; font-weight:700; }
-.score-label { font-weight:700; color:#5b6b66; }
-.trait-card { width:100%; margin:8px 0; padding:22px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.score-label { margin:0; font-size:clamp(15px,1.9vh,20px); line-height:1.4; font-weight:700; color:#5b6b66; }
+.trait-card { width:100%; margin:0; padding:clamp(16px,2.1vh,24px) 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .trait-mark { font-size:24px; color:var(--green); margin-bottom:8px; }
 .trait-card h2 { margin:0 0 8px; font-size:clamp(30px,4vh,44px); color:var(--green-dark); }
 .trait-card p { margin:0 auto; max-width:620px; font-size:clamp(17px,2vh,22px); line-height:1.65; color:#50615c; }
-.result-participant { font-size:16px; color:#6b7773; }
+.result-participant { margin:0; font-size:clamp(15px,1.8vh,18px); line-height:1.45; color:#6b7773; }
 .result-participant strong { color:var(--green-dark); }
-.result-comparison { border-top:1px solid var(--line); padding-top:11px; color:var(--muted); font-size:15px; }
+.result-comparison { margin:0; border-top:1px solid var(--line); padding-top:clamp(10px,1.3vh,14px); color:var(--muted); font-size:clamp(14px,1.7vh,17px); }
 .result-comparison strong { color:var(--green-dark); font-size:19px; }
-.result-screen .primary-button { margin-top:6px; min-height:68px; justify-content:center; }
-.auto-reset { font-size:13px; color:#89928f; }
+.result-screen .primary-button { width:min(100%,720px); margin:clamp(2px,.7vh,8px) 0 0; min-height:clamp(62px,7.5vh,78px); justify-content:center; }
+.auto-reset { margin:0; font-size:clamp(12px,1.5vh,15px); color:#89928f; }
 
 .admin-screen { overflow:auto; background:rgba(251,250,246,.98); }
 .admin-header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
