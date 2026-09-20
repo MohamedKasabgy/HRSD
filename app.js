@@ -510,7 +510,9 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     $("displayAverage").textContent = count ? average : "—";
     $("displayHigh").textContent = count ? highest : "—";
     $("displayTrait").textContent = count && leading?.[1] ? leading[0] : "—";
-    $("displayApp").classList.toggle("is-complete", count >= MAX_PARTICIPANTS);
+    const isComplete = count >= MAX_PARTICIPANTS;
+    $("displayApp").classList.toggle("is-complete", isComplete);
+    $("completionCelebration").classList.toggle("is-visible", isComplete);
 
     const grid = $("participantGrid");
     grid.innerHTML = "";
