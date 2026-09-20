@@ -714,7 +714,20 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
   }
 
+  async function clearLegacyOfflineCache() {
+    // لا نحتفظ بنسخة Offline حتى تظهر تحديثات الفعالية فور نشرها.
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((key) => key.startsWith("quality96-")).map((key) => caches.delete(key)));
+    }
+  }
+
   async function init() {
+    clearLegacyOfflineCache().catch((error) => console.warn("Cache cleanup failed", error));
     if (location.pathname.replace(/\/+$/, "") === "/display" || new URLSearchParams(location.search).get("view") === "display") {
       await initDisplay();
       return;
@@ -730,9 +743,6 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     updateFullscreenButton();
     if (new URLSearchParams(location.search).get("admin") === "1") openAdmin();
 
-    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-      navigator.serviceWorker.register("service-worker.js").catch(() => {});
-    }
   }
 
   init();
