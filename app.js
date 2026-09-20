@@ -566,6 +566,26 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     window.addEventListener("beforeunload", () => { supabase.removeChannel(channel); });
   }
 
+  function initParticipantRealtime() {
+    if (!supabase) return;
+    let syncTimer = null;
+    const sync = () => {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(async () => {
+        try {
+          await refreshCentralParticipants();
+          if ($("adminScreen").classList.contains("is-active")) renderAdmin();
+        } catch (error) {
+          console.warn("Participant realtime sync failed", error);
+        }
+      }, 150);
+    };
+    const channel = supabase.channel("participants-play")
+      .on("postgres_changes", { event: "*", schema: "public", table: "participants" }, sync)
+      .subscribe();
+    window.addEventListener("beforeunload", () => { supabase.removeChannel(channel); });
+  }
+
   function renderAdmin() {
     const total = participantCount();
     const rows = isSupabaseConfigured ? cloudParticipants : submissions;
@@ -837,6 +857,7 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     if (supabase) {
       try { await refreshCentralParticipants(); await retryPendingSubmissions(); }
       catch (error) { console.warn("Supabase initial sync failed", error); toast("تعمل الشاشة محليًا حتى يعود الاتصال بالبيانات المركزية"); }
+      initParticipantRealtime();
     }
     bindEvents();
     updateFullscreenButton();
