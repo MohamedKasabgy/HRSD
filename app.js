@@ -497,6 +497,64 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     showScreen("homeScreen");
   }
 
+  function ensureCompletionCelebration() {
+    const box = $("completionCelebration");
+    if (!box || box.dataset.ready === "true") return;
+    const shapes = [
+      [
+        "M42 4 C10 30 74 47 42 78 C12 108 72 128 38 160 C22 178 44 196 60 210",
+        "M35 4 C72 26 14 49 47 78 C78 108 13 132 45 160 C66 181 32 198 48 210",
+        "M46 4 C18 26 67 51 36 80 C6 111 77 128 42 158 C19 180 62 196 41 210",
+        "M42 4 C10 30 74 47 42 78 C12 108 72 128 38 160 C22 178 44 196 60 210"
+      ],
+      [
+        "M34 4 C76 34 8 56 43 88 C78 120 7 146 46 180 C64 196 56 210 26 226",
+        "M46 4 C10 31 72 61 34 91 C3 119 76 149 38 180 C21 195 35 213 58 226",
+        "M32 4 C70 30 14 58 48 90 C82 121 5 146 43 181 C61 198 47 212 29 226",
+        "M34 4 C76 34 8 56 43 88 C78 120 7 146 46 180 C64 196 56 210 26 226"
+      ],
+      [
+        "M54 4 C16 25 72 54 35 81 C0 108 71 135 38 166 C22 181 30 196 58 207",
+        "M28 4 C76 25 14 55 48 82 C84 110 10 138 43 166 C62 182 48 197 31 207",
+        "M50 4 C17 27 68 54 32 83 C-2 112 75 136 39 166 C20 183 35 198 61 207",
+        "M54 4 C16 25 72 54 35 81 C0 108 71 135 38 166 C22 181 30 196 58 207"
+      ]
+    ];
+    const streamers = [
+      [4, 6.8, -1.2, 44, "#22c989", 8],
+      [15, 7.6, -5.3, -36, "#0a7b61", 7],
+      [27, 6.2, -2.8, 52, "#5ee0aa", 8],
+      [41, 8.1, -6.6, -48, "#006b58", 7],
+      [55, 6.9, -3.7, 38, "#2ccf94", 8],
+      [68, 7.4, -1.9, -42, "#0a6b5b", 7],
+      [82, 6.5, -5.8, 46, "#73e6bd", 8],
+      [94, 7.9, -4.4, -34, "#087a67", 7],
+      [9, 8.4, -7.2, -50, "#3fd99d", 7],
+      [74, 8.7, -7.8, 55, "#0f8c72", 8]
+    ].map(([x, d, delay, drift, color, width], index) => {
+      const values = shapes[index % shapes.length].join(";");
+      const viewBox = index % 3 === 1 ? "0 0 84 230" : "0 0 84 214";
+      const height = index % 3 === 1 ? 230 : 214;
+      return `<svg class="celebration-streamer" viewBox="${viewBox}" style="--x:${x};--d:${d}s;--delay:${delay}s;--drift:${drift}px;--streamer-color:${color};--streamer-width:${width}px" focusable="false" aria-hidden="true">
+        <path class="streamer-shadow" d="${shapes[index % shapes.length][0]}"><animate attributeName="d" dur="1.25s" repeatCount="indefinite" values="${values}" /></path>
+        <path class="streamer-main" d="${shapes[index % shapes.length][0]}"><animate attributeName="d" dur="1.25s" repeatCount="indefinite" values="${values}" /></path>
+        <path class="streamer-shine" d="${shapes[index % shapes.length][0]}" stroke-dasharray="${height > 220 ? "20 22" : "18 20"}"><animate attributeName="d" dur="1.25s" repeatCount="indefinite" values="${values}" /></path>
+      </svg>`;
+    }).join("");
+    const greens = ["#0a6b5b", "#22c989", "#73e6bd", "#0f8c72", "#143d38"];
+    const confetti = Array.from({ length: 58 }, (_, index) => {
+      const x = (index * 17) % 100;
+      const d = 4.6 + (index % 7) * .55;
+      const delay = -((index * .47) % 6.5).toFixed(2);
+      const drift = ((index % 2 ? -1 : 1) * (18 + (index % 5) * 12));
+      const size = 3 + (index % 4);
+      const color = greens[index % greens.length];
+      return `<span class="celebration-confetti" style="--x:${x};--d:${d}s;--delay:${delay}s;--drift:${drift}px;--size:${size}px;--confetti-color:${color}"></span>`;
+    }).join("");
+    box.innerHTML = streamers + confetti;
+    box.dataset.ready = "true";
+  }
+
   function renderDisplay(rows, newlyCompletedNumber = null) {
     const count = rows.length;
     const scores = rows.map((row) => Number(row.score) || 0);
@@ -511,6 +569,7 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     $("displayHigh").textContent = count ? highest : "—";
     $("displayTrait").textContent = count && leading?.[1] ? leading[0] : "—";
     const isComplete = count >= MAX_PARTICIPANTS;
+    ensureCompletionCelebration();
     $("displayApp").classList.toggle("is-complete", isComplete);
     $("completionCelebration").classList.toggle("is-visible", isComplete);
 
