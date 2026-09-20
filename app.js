@@ -88,6 +88,13 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   let cloudParticipants = [];
   let currentSessionId = null;
   let completionInProgress = false;
+  let celebrationCanvas = null;
+  let celebrationContext = null;
+  let celebrationFrameId = null;
+  let celebrationLastFrame = 0;
+  let celebrationStreamers = [];
+  let celebrationConfetti = [];
+  let celebrationSize = { width: 0, height: 0, ratio: 1 };
 
   function showScreen(id) {
     screens.forEach((screenId) => {
@@ -500,59 +507,158 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   function ensureCompletionCelebration() {
     const box = $("completionCelebration");
     if (!box || box.dataset.ready === "true") return;
-    const shapes = [
-      [
-        "M42 4 C10 30 74 47 42 78 C12 108 72 128 38 160 C22 178 44 196 60 210",
-        "M35 4 C72 26 14 49 47 78 C78 108 13 132 45 160 C66 181 32 198 48 210",
-        "M46 4 C18 26 67 51 36 80 C6 111 77 128 42 158 C19 180 62 196 41 210",
-        "M42 4 C10 30 74 47 42 78 C12 108 72 128 38 160 C22 178 44 196 60 210"
-      ],
-      [
-        "M34 4 C76 34 8 56 43 88 C78 120 7 146 46 180 C64 196 56 210 26 226",
-        "M46 4 C10 31 72 61 34 91 C3 119 76 149 38 180 C21 195 35 213 58 226",
-        "M32 4 C70 30 14 58 48 90 C82 121 5 146 43 181 C61 198 47 212 29 226",
-        "M34 4 C76 34 8 56 43 88 C78 120 7 146 46 180 C64 196 56 210 26 226"
-      ],
-      [
-        "M54 4 C16 25 72 54 35 81 C0 108 71 135 38 166 C22 181 30 196 58 207",
-        "M28 4 C76 25 14 55 48 82 C84 110 10 138 43 166 C62 182 48 197 31 207",
-        "M50 4 C17 27 68 54 32 83 C-2 112 75 136 39 166 C20 183 35 198 61 207",
-        "M54 4 C16 25 72 54 35 81 C0 108 71 135 38 166 C22 181 30 196 58 207"
-      ]
-    ];
-    const streamers = [
-      [4, 6.8, -1.2, 44, "#22c989", 8],
-      [15, 7.6, -5.3, -36, "#0a7b61", 7],
-      [27, 6.2, -2.8, 52, "#5ee0aa", 8],
-      [41, 8.1, -6.6, -48, "#006b58", 7],
-      [55, 6.9, -3.7, 38, "#2ccf94", 8],
-      [68, 7.4, -1.9, -42, "#0a6b5b", 7],
-      [82, 6.5, -5.8, 46, "#73e6bd", 8],
-      [94, 7.9, -4.4, -34, "#087a67", 7],
-      [9, 8.4, -7.2, -50, "#3fd99d", 7],
-      [74, 8.7, -7.8, 55, "#0f8c72", 8]
-    ].map(([x, d, delay, drift, color, width], index) => {
-      const values = shapes[index % shapes.length].join(";");
-      const viewBox = index % 3 === 1 ? "0 0 84 230" : "0 0 84 214";
-      const height = index % 3 === 1 ? 230 : 214;
-      return `<svg class="celebration-streamer" viewBox="${viewBox}" style="--x:${x};--d:${d}s;--delay:${delay}s;--drift:${drift}px;--streamer-color:${color};--streamer-width:${width}px" focusable="false" aria-hidden="true">
-        <path class="streamer-shadow" d="${shapes[index % shapes.length][0]}"><animate attributeName="d" dur="1.25s" repeatCount="indefinite" values="${values}" /></path>
-        <path class="streamer-main" d="${shapes[index % shapes.length][0]}"><animate attributeName="d" dur="1.25s" repeatCount="indefinite" values="${values}" /></path>
-        <path class="streamer-shine" d="${shapes[index % shapes.length][0]}" stroke-dasharray="${height > 220 ? "20 22" : "18 20"}"><animate attributeName="d" dur="1.25s" repeatCount="indefinite" values="${values}" /></path>
-      </svg>`;
-    }).join("");
-    const greens = ["#0a6b5b", "#22c989", "#73e6bd", "#0f8c72", "#143d38"];
-    const confetti = Array.from({ length: 58 }, (_, index) => {
-      const x = (index * 17) % 100;
-      const d = 4.6 + (index % 7) * .55;
-      const delay = -((index * .47) % 6.5).toFixed(2);
-      const drift = ((index % 2 ? -1 : 1) * (18 + (index % 5) * 12));
-      const size = 3 + (index % 4);
-      const color = greens[index % greens.length];
-      return `<span class="celebration-confetti" style="--x:${x};--d:${d}s;--delay:${delay}s;--drift:${drift}px;--size:${size}px;--confetti-color:${color}"></span>`;
-    }).join("");
-    box.innerHTML = streamers + confetti;
+    celebrationCanvas = document.createElement("canvas");
+    celebrationCanvas.className = "celebration-canvas";
+    celebrationCanvas.setAttribute("aria-hidden", "true");
+    box.textContent = "";
+    box.appendChild(celebrationCanvas);
+    celebrationContext = celebrationCanvas.getContext("2d");
     box.dataset.ready = "true";
+    resizeCompletionCelebration();
+    window.addEventListener("resize", resizeCompletionCelebration);
+  }
+
+  function resizeCompletionCelebration() {
+    if (!celebrationCanvas) return;
+    const box = $("completionCelebration");
+    const rect = box?.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect?.width || window.innerWidth || 1));
+    const height = Math.max(1, Math.round(rect?.height || window.innerHeight || 1));
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    if (celebrationSize.width === width && celebrationSize.height === height && celebrationSize.ratio === ratio) return;
+    celebrationSize = { width, height, ratio };
+    celebrationCanvas.width = Math.round(width * ratio);
+    celebrationCanvas.height = Math.round(height * ratio);
+    celebrationCanvas.style.width = `${width}px`;
+    celebrationCanvas.style.height = `${height}px`;
+    if (celebrationContext) celebrationContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+    createCompletionCelebrationItems(width, height);
+  }
+
+  function createCompletionCelebrationItems(width, height) {
+    const colors = ["#0a6b5b", "#16b985", "#59ddb0", "#08745f", "#143d38", "#8ee8ca"];
+    const streamers = [
+      [0.04, -0.12, 42, 7.5, 0], [0.14, 0.18, -38, 8.1, 1], [0.27, -0.3, 54, 7.2, 2],
+      [0.40, 0.06, -46, 8.7, 3], [0.54, -0.22, 36, 7.8, 4], [0.68, 0.24, -44, 8.5, 5],
+      [0.81, -0.08, 50, 7.1, 1], [0.94, 0.32, -34, 8.3, 2], [0.10, -0.5, -52, 9.1, 0],
+      [0.74, -0.42, 58, 9.4, 3]
+    ];
+    celebrationStreamers = streamers.map(([x, y, drift, seconds, colorIndex], index) => ({
+      x: width * x,
+      y: height * y,
+      drift,
+      speed: (height + 360) / seconds,
+      length: Math.max(130, Math.min(300, height * (index % 3 === 1 ? .18 : .14))),
+      amp: 16 + (index % 4) * 5,
+      width: 6 + (index % 3),
+      phase: index * 1.7,
+      wave: .0026 + (index % 3) * .0007,
+      color: colors[colorIndex]
+    }));
+    celebrationConfetti = Array.from({ length: 64 }, (_, index) => ({
+      x: width * (((index * 17) % 100) / 100),
+      y: height * (-.05 - ((index * 11) % 120) / 100),
+      drift: (index % 2 ? -1 : 1) * (18 + (index % 5) * 10),
+      speed: 75 + (index % 7) * 18,
+      size: 3 + (index % 4),
+      phase: index * .91,
+      color: colors[index % colors.length]
+    }));
+  }
+
+  function drawStreamer(ctx, streamer, time) {
+    const points = [];
+    const segments = 7;
+    for (let i = 0; i <= segments; i += 1) {
+      const p = i / segments;
+      const y = p * streamer.length;
+      const x = Math.sin(p * 8.2 + time * streamer.wave + streamer.phase) * streamer.amp
+        + Math.sin(time * streamer.wave * 1.7 + streamer.phase) * 8;
+      points.push([x, y]);
+    }
+    const trace = () => {
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; i += 1) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const cpX = (prev[0] + curr[0]) / 2 + Math.sin(time * streamer.wave * 2 + streamer.phase + i) * streamer.amp * .35;
+        const cpY = (prev[1] + curr[1]) / 2;
+        ctx.quadraticCurveTo(cpX, cpY, curr[0], curr[1]);
+      }
+    };
+    const sway = Math.sin(time * streamer.wave + streamer.phase) * 34;
+    const rotate = Math.sin(time * streamer.wave * 1.4 + streamer.phase) * .55;
+    ctx.save();
+    ctx.translate(streamer.x + sway, streamer.y);
+    ctx.rotate(rotate);
+    trace();
+    ctx.lineWidth = streamer.width + 5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(20,61,56,.15)";
+    ctx.stroke();
+    trace();
+    ctx.lineWidth = streamer.width;
+    ctx.strokeStyle = streamer.color;
+    ctx.stroke();
+    trace();
+    ctx.lineWidth = Math.max(2, streamer.width * .34);
+    ctx.strokeStyle = "rgba(255,255,255,.62)";
+    ctx.setLineDash([16, 18]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  function drawCompletionCelebration(now) {
+    if (!$("completionCelebration")?.classList.contains("is-visible")) return;
+    resizeCompletionCelebration();
+    const ctx = celebrationContext;
+    if (!ctx) return;
+    const { width, height, ratio } = celebrationSize;
+    const delta = Math.min(.04, Math.max(.001, (now - (celebrationLastFrame || now)) / 1000));
+    celebrationLastFrame = now;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    celebrationStreamers.forEach((streamer) => {
+      streamer.y += streamer.speed * delta;
+      if (streamer.y > height + streamer.length + 30) streamer.y = -streamer.length - Math.random() * height * .55;
+      drawStreamer(ctx, streamer, now);
+    });
+    celebrationConfetti.forEach((piece) => {
+      piece.y += piece.speed * delta;
+      if (piece.y > height + 20) piece.y = -20 - Math.random() * height * .35;
+      const wobble = Math.sin(now * .003 + piece.phase) * piece.drift;
+      ctx.save();
+      ctx.translate(piece.x + wobble, piece.y);
+      ctx.rotate(now * .004 + piece.phase);
+      ctx.fillStyle = piece.color;
+      ctx.globalAlpha = .72;
+      ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * .72);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    });
+    celebrationFrameId = requestAnimationFrame(drawCompletionCelebration);
+  }
+
+  function setCompletionCelebration(active) {
+    ensureCompletionCelebration();
+    const box = $("completionCelebration");
+    const app = $("displayApp");
+    app?.classList.toggle("is-complete", active);
+    box?.classList.toggle("is-visible", active);
+    if (active) {
+      if (!celebrationFrameId) {
+        celebrationLastFrame = performance.now();
+        celebrationFrameId = requestAnimationFrame(drawCompletionCelebration);
+      }
+    } else {
+      if (celebrationFrameId) cancelAnimationFrame(celebrationFrameId);
+      celebrationFrameId = null;
+      celebrationLastFrame = 0;
+      if (celebrationContext) celebrationContext.clearRect(0, 0, celebrationSize.width, celebrationSize.height);
+    }
   }
 
   function renderDisplay(rows, newlyCompletedNumber = null) {
@@ -569,9 +675,7 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     $("displayHigh").textContent = count ? highest : "—";
     $("displayTrait").textContent = count && leading?.[1] ? leading[0] : "—";
     const isComplete = count >= MAX_PARTICIPANTS;
-    ensureCompletionCelebration();
-    $("displayApp").classList.toggle("is-complete", isComplete);
-    $("completionCelebration").classList.toggle("is-visible", isComplete);
+    setCompletionCelebration(isComplete);
 
     const grid = $("participantGrid");
     grid.innerHTML = "";
