@@ -165,15 +165,16 @@ h1 span { color:var(--green); }
 
 .result-screen { justify-content:flex-start; align-items:center; text-align:center; gap:clamp(12px,1.7vh,22px); padding-top:clamp(28px,4.2vh,58px); padding-bottom:clamp(24px,3.2vh,46px); }
 .result-screen > * { flex:0 0 auto; }
-.result-kicker { margin:0; font-size:clamp(17px,2.1vh,23px); line-height:1.35; color:var(--green); font-weight:800; }
-.score-wrap { position:relative; width:clamp(185px,24vh,250px); aspect-ratio:1; margin:clamp(4px,.8vh,10px) 0; }
+.result-kicker { display:block; position:relative; z-index:1; margin:0; min-height:1.35em; font-size:clamp(19px,2.3vh,25px); line-height:1.35; color:var(--green); font-weight:800; }
+.score-block { display:flex; flex-direction:column; align-items:center; gap:clamp(10px,1.4vh,16px); margin:clamp(4px,.8vh,10px) 0; }
+.score-wrap { position:relative; width:clamp(180px,22vh,235px); aspect-ratio:1; }
 .score-ring { width:100%; height:100%; transform:rotate(-90deg); }
 .score-ring-bg, .score-ring-value { fill:none; stroke-width:12; }
 .score-ring-bg { stroke:#e2e8e5; }
 .score-ring-value { stroke:var(--green); stroke-linecap:butt; stroke-dasharray:578.05; stroke-dashoffset:578.05; transition:stroke-dashoffset .9s ease; }
-.score-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.score-center strong { font-size:clamp(58px,7vh,82px); line-height:.9; color:var(--green-dark); letter-spacing:-.05em; }
-.score-center span { margin-top:8px; color:#6d7975; font-weight:700; }
+.score-center { position:static; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:150px; }
+.score-center strong { display:block; font-size:clamp(64px,7.5vh,88px); line-height:.85; color:var(--green-dark); letter-spacing:-.05em; }
+.score-center span { display:block; margin-top:9px; color:#6d7975; font-size:clamp(16px,1.9vh,20px); font-weight:700; }
 .score-label { margin:0; font-size:clamp(15px,1.9vh,20px); line-height:1.4; font-weight:700; color:#5b6b66; }
 .trait-card { width:100%; margin:0; padding:clamp(16px,2.1vh,24px) 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .trait-mark { font-size:24px; color:var(--green); margin-bottom:8px; }
