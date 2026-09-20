@@ -150,7 +150,7 @@ h1 span { color:var(--green); }
 .timer small { font-size:14px; opacity:.75; }
 .timer.is-low { background:#7b3730; }
 .step-track { margin-bottom:34px; }
-.question-panel { flex:1; display:flex; flex-direction:column; justify-content:center; }
+.question-panel { flex:1; display:flex; flex-direction:column; justify-content:flex-start; }
 .category-pill { align-self:flex-start; background:#e8efec; color:var(--green-dark); border-right:4px solid var(--green); padding:9px 14px; font-size:16px; font-weight:800; margin-bottom:18px; }
 .question-panel h2 { margin:0 0 clamp(26px,4vh,46px); font-size:clamp(29px,4vh,47px); line-height:1.48; letter-spacing:-.025em; color:var(--ink); }
 .options { display:grid; gap:14px; }
@@ -269,25 +269,6 @@ h1 span { color:var(--green); }
 
 @media (max-width: 900px), (orientation:portrait) {
   .display-app { overflow-y:auto; }.display-header { grid-template-columns:1fr 1fr; }.display-title { grid-column:1 / -1; grid-row:2; }.display-ministry-logo { width:190px; }.display-national-logo { width:185px; }.display-stage { grid-template-columns:1fr; grid-template-areas:"count" "stats" "grid" "traits"; row-gap:24px; }.display-count strong { font-size:clamp(130px,28vw,250px); }.participant-grid { max-width:760px; width:100%; margin:auto; }.display-distribution { width:min(680px,100%); margin:0 auto 45px; }.display-stats { max-width:680px; width:100%; margin:0 auto; }.completion-message { position:fixed; }
-}
-
-/* شاشة العرض العمودية: تقدّم التحدي وشبكة 96 فقط. */
-@media (orientation: portrait) {
-  .display-app { height:100dvh; min-height:0; overflow:hidden; padding:clamp(18px,2.4vh,42px) clamp(24px,4vw,54px); }
-  .display-header { gap:14px; padding-bottom:clamp(12px,1.8vh,26px); }
-  .display-ministry-logo { width:min(31vw,210px); height:48px; }
-  .display-national-logo { width:min(31vw,210px); height:48px; padding:5px 8px; }
-  .display-title h1 { font-size:clamp(26px,4vw,46px); }
-  .display-title p { margin-top:4px; font-size:clamp(14px,2vw,20px); }
-  .display-stage { padding-top:clamp(14px,2vh,30px); height:calc(100dvh - clamp(132px,16vh,220px)); grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr); grid-template-areas:"count" "grid"; row-gap:clamp(16px,2.5vh,30px); }
-  .display-count { border:0; padding:0; display:grid; grid-template-columns:auto auto; justify-content:center; align-items:end; column-gap:12px; }
-  .display-count strong { display:inline; font-size:clamp(128px,23vw,240px); line-height:.65; }
-  .display-count > span { display:inline; margin:0 0 6px; font-size:clamp(30px,5vw,48px); }
-  .display-count p { grid-column:1 / -1; margin:16px 0 0; font-size:clamp(16px,2.4vw,25px); }
-  .participant-grid { width:min(100%,900px); aspect-ratio:12 / 8; height:auto; margin:0 auto; grid-template-columns:repeat(12,1fr); grid-template-rows:repeat(8,1fr); gap:clamp(5px,.85vw,10px); align-self:center; }
-  .participant-cell { aspect-ratio:auto; font-size:clamp(14px,2vw,23px); }
-  .display-stats, .display-distribution, .display-status { display:none; }
-  .display-fullscreen { opacity:.16; }
 }
 
 :fullscreen .app-shell,
