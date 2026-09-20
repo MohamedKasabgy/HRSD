@@ -106,6 +106,13 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     el._timer = setTimeout(() => el.classList.remove("show"), 2200);
   }
 
+  function normalizeNumberInput(value) {
+    return String(value ?? "")
+      .trim()
+      .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+      .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
+  }
+
   async function openDB() {
     if (!window.indexedDB) return null;
     return new Promise((resolve) => {
@@ -721,7 +728,7 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   async function editParticipantCount() {
     const requested = prompt("أدخل إجمالي المشاركات الذي تريد عرضه:", String(participantCount()));
     if (requested === null) return;
-    const count = Number(requested);
+    const count = Number(normalizeNumberInput(requested));
     if (!Number.isFinite(count) || count < 0 || count > MAX_PARTICIPANTS || !Number.isInteger(count)) {
       toast("أدخل رقمًا صحيحًا من 0 إلى 96");
       return;
@@ -744,15 +751,19 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
 
   async function resetAll() {
     const code = prompt("لتأكيد حذف جميع النتائج اكتب: 96");
-    if (code !== "96") return;
+    if (normalizeNumberInput(code) !== "96") return;
     if (supabase) {
       const { error } = await supabase.rpc("reset_participants");
       if (error) {
-        console.error("Central reset failed", error);
-        toast("تعذر تصفير العداد المركزي الآن");
-        return;
+        console.warn("Central reset failed; trying set_participant_count fallback", error);
+        const { error: fallbackError } = await supabase.rpc("set_participant_count", { p_count: 0 });
+        if (fallbackError) {
+          console.error("Central reset failed", fallbackError);
+          toast("تعذر تصفير العداد المركزي الآن");
+          return;
+        }
       }
-      cloudParticipants = [];
+      await refreshCentralParticipants();
     }
     submissions = [];
     participantAdjustment = 0;
