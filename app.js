@@ -25,7 +25,7 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   const questions = [
     {
       category: "الكفاءة", trait: "efficiency",
-      text: "إجراء يومي يستغرق 7 خطوات ويمكن إنجازه في 4 دون التأثير على الجودة.",
+      text: "إجراء يومي يستغرق 7 خطوات ويمكن إنجازه في 4 خطوات دون التأثير على الجودة.",
       options: [
         { text: "أستمر كما هو لأنه الإجراء المعتاد.", weight: 1 },
         { text: "أختصر الخطوات مباشرة.", weight: 2 },
