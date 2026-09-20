@@ -98,6 +98,43 @@ $$;
 revoke all on function public.reset_participants() from public;
 grant execute on function public.reset_participants() to anon;
 
+-- تعديل عدد المشاركات من لوحة المشرف مع الحفاظ على أول النتائج وحذف الزيادة فقط.
+create or replace function public.set_participant_count(p_count integer)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_count integer;
+  filler_score integer;
+  next_number integer;
+begin
+  if p_count < 0 or p_count > 96 then
+    raise exception 'COUNT_OUT_OF_RANGE' using errcode = 'P0001';
+  end if;
+
+  perform pg_advisory_xact_lock(960097);
+
+  select count(*), coalesce(round(avg(score)), 0)::integer
+    into current_count, filler_score
+    from public.participants;
+
+  if p_count < current_count then
+    delete from public.participants
+    where participant_number > p_count;
+  elsif p_count > current_count then
+    for next_number in (current_count + 1)..p_count loop
+      insert into public.participants (participant_number, score, quality_type, answers, session_id)
+      values (next_number, filler_score, 'تعديل يدوي', '[]'::jsonb, 'admin-adjust-' || gen_random_uuid()::text);
+    end loop;
+  end if;
+end;
+$$;
+
+revoke all on function public.set_participant_count(integer) from public;
+grant execute on function public.set_participant_count(integer) to anon;
+
 -- فعّل بث INSERT وDELETE اللحظي للعرض الخارجي.
 do $$ begin
   alter publication supabase_realtime add table public.participants;

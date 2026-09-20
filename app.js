@@ -175,6 +175,31 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     return isSupabaseConfigured ? cloudParticipants.length : Math.max(0, submissions.length + participantAdjustment);
   }
 
+  function randomId(prefix) {
+    const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    return `${prefix}-${id}`;
+  }
+
+  function centralAverage(rows = cloudParticipants) {
+    if (!rows.length) return 0;
+    return Math.round(rows.reduce((sum, row) => sum + (Number(row.score) || 0), 0) / rows.length);
+  }
+
+  function traitKeyFromTitle(title) {
+    return Object.keys(traits).find((key) => traits[key].title === title);
+  }
+
+  function centralRowForInsert(row, number) {
+    return {
+      participant_number: number,
+      score: Math.max(0, Math.min(96, Number(row.score) || 0)),
+      quality_type: row.quality_type || "تعديل يدوي",
+      answers: Array.isArray(row.answers) ? row.answers : [],
+      completed_at: row.completed_at || new Date().toISOString(),
+      session_id: row.session_id || randomId("admin-restore")
+    };
+  }
+
   async function loadSubmissions() {
     const fromDB = await readDB();
     const fromBackup = readBackup();
@@ -536,12 +561,16 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
 
   function renderAdmin() {
     const total = participantCount();
-    const avg = total ? Math.round(submissions.reduce((s, x) => s + Number(x.score96 || 0), 0) / total) : 0;
+    const rows = isSupabaseConfigured ? cloudParticipants : submissions;
+    const avg = total ? Math.round(rows.reduce((s, x) => s + Number(x.score ?? x.score96 ?? 0), 0) / total) : 0;
     $("adminTotal").textContent = total;
     $("adminAverage").textContent = avg;
     const stats = {};
     Object.keys(traits).forEach((k) => stats[k] = 0);
-    submissions.forEach((s) => { if (stats[s.trait] !== undefined) stats[s.trait] += 1; });
+    rows.forEach((s) => {
+      const traitKey = s.trait || traitKeyFromTitle(s.quality_type || s.traitTitle);
+      if (stats[traitKey] !== undefined) stats[traitKey] += 1;
+    });
     const box = $("traitStats");
     box.innerHTML = "";
     Object.entries(traits).forEach(([key, value]) => {
@@ -555,9 +584,13 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     });
   }
 
-  function openAdmin() {
+  async function openAdmin() {
     clearInterval(timerId);
     clearInterval(autoResetId);
+    if (supabase) {
+      try { await refreshCentralParticipants(); }
+      catch (error) { console.warn("Admin refresh failed", error); toast("تعذر تحديث بيانات لوحة المشرف الآن"); }
+    }
     renderAdmin();
     showScreen("adminScreen");
   }
@@ -641,19 +674,72 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     }
   }
 
-  function editParticipantCount() {
+  async function setCentralParticipantCount(count) {
+    const existing = await refreshCentralParticipants();
+    const current = existing.length;
+    if (count === current) return;
+
+    const { error: setCountError } = await supabase.rpc("set_participant_count", { p_count: count });
+    if (!setCountError) {
+      await refreshCentralParticipants();
+      return;
+    }
+    const missingRpc = setCountError.code === "PGRST202" || String(setCountError.message || "").includes("set_participant_count");
+    if (!missingRpc) throw setCountError;
+    console.warn("set_participant_count RPC is unavailable; using compatibility path", setCountError);
+
+    if (count > current) {
+      const fillerScore = centralAverage(existing);
+      for (let number = current + 1; number <= count; number += 1) {
+        const { error } = await supabase.rpc("complete_participant", {
+          p_session_id: randomId("admin-count"),
+          p_score: fillerScore,
+          p_quality_type: "تعديل يدوي",
+          p_answers: []
+        });
+        if (error) throw error;
+      }
+      await refreshCentralParticipants();
+      return;
+    }
+
+    const preserved = existing.slice(0, count).map((row, index) => centralRowForInsert(row, index + 1));
+    const { error: resetError } = await supabase.rpc("reset_participants");
+    if (resetError) throw resetError;
+    for (const item of preserved) {
+      const { error } = await supabase.rpc("complete_participant", {
+        p_session_id: item.session_id,
+        p_score: item.score,
+        p_quality_type: item.quality_type,
+        p_answers: item.answers
+      });
+      if (error) throw error;
+    }
+    await refreshCentralParticipants();
+  }
+
+  async function editParticipantCount() {
     const requested = prompt("أدخل إجمالي المشاركات الذي تريد عرضه:", String(participantCount()));
     if (requested === null) return;
     const count = Number(requested);
-    if (!Number.isFinite(count) || count < 0 || !Number.isInteger(count)) {
-      toast("أدخل رقمًا صحيحًا موجبًا أو صفرًا");
+    if (!Number.isFinite(count) || count < 0 || count > MAX_PARTICIPANTS || !Number.isInteger(count)) {
+      toast("أدخل رقمًا صحيحًا من 0 إلى 96");
       return;
     }
-    participantAdjustment = count - submissions.length;
-    writeParticipantAdjustment();
-    renderAdmin();
-    updateCounters();
-    toast("تم تعديل إجمالي المشاركات");
+    try {
+      if (supabase) {
+        await setCentralParticipantCount(count);
+      } else {
+        participantAdjustment = count - submissions.length;
+        writeParticipantAdjustment();
+      }
+      renderAdmin();
+      updateCounters();
+      toast("تم تعديل إجمالي المشاركات");
+    } catch (error) {
+      console.error("Participant count edit failed", error);
+      toast("تعذر تعديل المشاركات الآن");
+    }
   }
 
   async function resetAll() {
