@@ -89,7 +89,7 @@ button, .option-button { touch-action: manipulation; }
   position: absolute;
   z-index: 2;
   /* مساحة أمان إضافية أسفل الشريط حتى لا يغطي العناوين على شاشات الكشك. */
-  inset: 136px 0 0;
+  inset: 164px 0 0;
   padding: clamp(28px, 4.5vh, 56px) clamp(30px, 5vw, 54px);
   display: flex;
   flex-direction: column;
@@ -132,7 +132,7 @@ h1 span { color:var(--green); }
 }
 .primary-button:active { transform:translateY(1px); background:var(--green-deep); }
 .button-arrow { font-size:34px; }
-.touch-hint { margin:-13px 0 0; text-align:center; color:#77837f; font-size:14px; }
+.touch-hint { margin:6px 0 0; text-align:center; color:#77837f; font-size:14px; }
 .home-screen .primary-button { min-height:108px; font-size:clamp(26px, 3vh, 36px); }
 .home-screen .counter-card { padding:12px 0; }
 .home-screen .counter-label { font-size:14px; }
