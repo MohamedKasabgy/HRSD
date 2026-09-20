@@ -89,7 +89,7 @@ button, .option-button { touch-action: manipulation; }
   position: absolute;
   z-index: 2;
   /* مساحة أمان إضافية أسفل الشريط حتى لا يغطي العناوين على شاشات الكشك. */
-  inset: 164px 0 0;
+  inset: 148px 0 0;
   padding: clamp(28px, 4.5vh, 56px) clamp(30px, 5vw, 54px);
   display: flex;
   flex-direction: column;
@@ -245,20 +245,6 @@ h1 span { color:var(--green); }
 .completion-message { position:absolute; z-index:3; top:40%; right:50%; transform:translate(50%,-50%); background:var(--green-dark); color:white; padding:24px 42px; text-align:center; box-shadow:var(--shadow); animation:completion-in .6s ease both; }.completion-message strong,.completion-message span { display:block; }.completion-message strong { font-size:clamp(26px,3.5vw,48px); }.completion-message span { margin-top:8px; font-size:20px; opacity:.85; } @keyframes completion-in { from { opacity:0; transform:translate(50%,-45%) scale(.94); } to { opacity:1; transform:translate(50%,-50%) scale(1); } }
 .display-fullscreen { position:absolute; z-index:4; left:18px; bottom:16px; border:1px solid var(--line); background:var(--paper); color:var(--green-dark); border-radius:3px; padding:9px 13px; font-weight:700; cursor:pointer; transition:opacity .2s; }.display-fullscreen.is-muted { opacity:.2; }.display-status { position:absolute; z-index:2; bottom:12px; right:50%; transform:translateX(50%); margin:0; color:#7b8984; font-size:12px; }
 
-/* في الوضع الأفقي نعرض الرسالة الأساسية فقط؛ لا مساحة لإحصاءات ثانوية. */
-@media (orientation: landscape) {
-  .display-app { display:grid; grid-template-rows:auto minmax(0,1fr); height:100dvh; min-height:0; padding:clamp(18px,2.5vh,38px) clamp(32px,5vw,88px); }
-  .display-header { padding-bottom:clamp(12px,1.8vh,22px); }
-  .display-stage { height:100%; min-height:0; padding-top:clamp(12px,2vh,24px); grid-template-columns:minmax(0,1.55fr) minmax(270px,.72fr); grid-template-areas:"grid count"; column-gap:clamp(30px,5vw,90px); }
-  .display-count { border:0; padding:0; align-self:center; }
-  .display-count strong { font-size:clamp(150px,19vw,280px); }
-  .display-count > span { margin-top:12px; }
-  .display-count p { margin-top:12px; }
-  .participant-grid { width:100%; max-width:980px; aspect-ratio:12 / 8; grid-template-rows:repeat(8,1fr); align-self:center; }
-  .participant-cell { aspect-ratio:auto; }
-  .display-stats, .display-distribution, .display-status { display:none; }
-}
-
 @media (max-height: 760px) {
   .brandbar { height:92px; padding:14px 30px; }
   .screen { inset:108px 0 0; padding-top:22px; padding-bottom:18px; }
@@ -283,25 +269,6 @@ h1 span { color:var(--green); }
 
 @media (max-width: 900px), (orientation:portrait) {
   .display-app { overflow-y:auto; }.display-header { grid-template-columns:1fr 1fr; }.display-title { grid-column:1 / -1; grid-row:2; }.display-ministry-logo { width:190px; }.display-national-logo { width:185px; }.display-stage { grid-template-columns:1fr; grid-template-areas:"count" "stats" "grid" "traits"; row-gap:24px; }.display-count strong { font-size:clamp(130px,28vw,250px); }.participant-grid { max-width:760px; width:100%; margin:auto; }.display-distribution { width:min(680px,100%); margin:0 auto 45px; }.display-stats { max-width:680px; width:100%; margin:0 auto; }.completion-message { position:fixed; }
-}
-
-/* شاشة الفعالية العمودية: العدد وشبكة الـ96 هما الرسالة الوحيدة المهمة. */
-@media (orientation: portrait) {
-  .display-app { height:100dvh; min-height:0; overflow:hidden; padding:clamp(18px,2.4vh,42px) clamp(24px,4vw,54px); }
-  .display-header { gap:14px; padding-bottom:clamp(12px,1.8vh,26px); }
-  .display-ministry-logo { width:min(31vw,210px); height:48px; }
-  .display-national-logo { width:min(31vw,210px); height:48px; padding:5px 8px; }
-  .display-title h1 { font-size:clamp(26px,4vw,46px); }
-  .display-title p { margin-top:4px; font-size:clamp(14px,2vw,20px); }
-  .display-stage { padding-top:clamp(14px,2vh,30px); height:calc(100dvh - clamp(132px,16vh,220px)); grid-template-columns:1fr; grid-template-rows:auto minmax(0, 1fr); grid-template-areas:"count" "grid"; row-gap:clamp(16px,2.5vh,30px); }
-  .display-count { border:0; padding:0; display:grid; grid-template-columns:auto auto; justify-content:center; align-items:end; column-gap:12px; }
-  .display-count strong { display:inline; font-size:clamp(128px,23vw,240px); line-height:.65; }
-  .display-count > span { display:inline; margin:0 0 6px; font-size:clamp(30px,5vw,48px); }
-  .display-count p { grid-column:1 / -1; margin:16px 0 0; font-size:clamp(16px,2.4vw,25px); }
-  .participant-grid { width:min(100%,900px); aspect-ratio:12 / 8; height:auto; margin:0 auto; grid-template-columns:repeat(12,1fr); grid-template-rows:repeat(8,1fr); gap:clamp(5px,.85vw,10px); align-self:center; }
-  .participant-cell { aspect-ratio:auto; font-size:clamp(14px,2vw,23px); }
-  .display-stats, .display-distribution, .display-status { display:none; }
-  .display-fullscreen { opacity:.16; }
 }
 
 :fullscreen .app-shell,
