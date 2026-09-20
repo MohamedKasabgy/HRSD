@@ -104,7 +104,7 @@ button, .option-button { touch-action: manipulation; }
 .screen::-webkit-scrollbar { display:none; }
 .screen.is-active { opacity:1; transform:none; pointer-events:auto; visibility:visible; }
 
-.home-screen { justify-content: center; gap: 26px; }
+.home-screen { justify-content:flex-start; gap:20px; padding-top:clamp(34px,4.5vh,62px); }
 .home-copy { text-align:right; }
 .eyebrow { margin:0 0 18px; font-size: clamp(15px, 1.65vh, 20px); font-weight:700; color:var(--green); letter-spacing:.02em; }
 h1 { margin:0; font-size: clamp(52px, 7.4vh, 92px); line-height:1.12; letter-spacing:-.045em; color:var(--green-dark); }
