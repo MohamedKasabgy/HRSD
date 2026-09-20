@@ -502,6 +502,8 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   }
 
   async function initDisplay() {
+    document.documentElement.classList.add("is-display-view");
+    document.body.classList.add("is-display-view");
     $("app").hidden = true;
     $("displayApp").hidden = false;
     const status = $("displayStatus");
