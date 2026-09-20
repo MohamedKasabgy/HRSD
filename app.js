@@ -88,13 +88,6 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
   let cloudParticipants = [];
   let currentSessionId = null;
   let completionInProgress = false;
-  let celebrationCanvas = null;
-  let celebrationContext = null;
-  let celebrationFrameId = null;
-  let celebrationLastFrame = 0;
-  let celebrationStreamers = [];
-  let celebrationConfetti = [];
-  let celebrationSize = { width: 0, height: 0, ratio: 1 };
 
   function showScreen(id) {
     screens.forEach((screenId) => {
@@ -504,163 +497,6 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     showScreen("homeScreen");
   }
 
-  function ensureCompletionCelebration() {
-    const box = $("completionCelebration");
-    if (!box || box.dataset.ready === "true") return;
-    celebrationCanvas = document.createElement("canvas");
-    celebrationCanvas.className = "celebration-canvas";
-    celebrationCanvas.setAttribute("aria-hidden", "true");
-    box.textContent = "";
-    box.appendChild(celebrationCanvas);
-    celebrationContext = celebrationCanvas.getContext("2d");
-    box.dataset.ready = "true";
-    resizeCompletionCelebration();
-    window.addEventListener("resize", resizeCompletionCelebration);
-  }
-
-  function resizeCompletionCelebration() {
-    if (!celebrationCanvas) return;
-    const box = $("completionCelebration");
-    const rect = box?.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect?.width || window.innerWidth || 1));
-    const height = Math.max(1, Math.round(rect?.height || window.innerHeight || 1));
-    const ratio = Math.min(2, window.devicePixelRatio || 1);
-    if (celebrationSize.width === width && celebrationSize.height === height && celebrationSize.ratio === ratio) return;
-    celebrationSize = { width, height, ratio };
-    celebrationCanvas.width = Math.round(width * ratio);
-    celebrationCanvas.height = Math.round(height * ratio);
-    celebrationCanvas.style.width = `${width}px`;
-    celebrationCanvas.style.height = `${height}px`;
-    if (celebrationContext) celebrationContext.setTransform(ratio, 0, 0, ratio, 0, 0);
-    createCompletionCelebrationItems(width, height);
-  }
-
-  function createCompletionCelebrationItems(width, height) {
-    const colors = ["#0a6b5b", "#16b985", "#59ddb0", "#08745f", "#143d38", "#8ee8ca"];
-    const streamers = [
-      [0.04, -0.12, 42, 7.5, 0], [0.14, 0.18, -38, 8.1, 1], [0.27, -0.3, 54, 7.2, 2],
-      [0.40, 0.06, -46, 8.7, 3], [0.54, -0.22, 36, 7.8, 4], [0.68, 0.24, -44, 8.5, 5],
-      [0.81, -0.08, 50, 7.1, 1], [0.94, 0.32, -34, 8.3, 2], [0.10, -0.5, -52, 9.1, 0],
-      [0.74, -0.42, 58, 9.4, 3]
-    ];
-    celebrationStreamers = streamers.map(([x, y, drift, seconds, colorIndex], index) => ({
-      x: width * x,
-      y: height * y,
-      drift,
-      speed: (height + 360) / seconds,
-      length: Math.max(130, Math.min(300, height * (index % 3 === 1 ? .18 : .14))),
-      amp: 16 + (index % 4) * 5,
-      width: 6 + (index % 3),
-      phase: index * 1.7,
-      wave: .0026 + (index % 3) * .0007,
-      color: colors[colorIndex]
-    }));
-    celebrationConfetti = Array.from({ length: 64 }, (_, index) => ({
-      x: width * (((index * 17) % 100) / 100),
-      y: height * (-.05 - ((index * 11) % 120) / 100),
-      drift: (index % 2 ? -1 : 1) * (18 + (index % 5) * 10),
-      speed: 75 + (index % 7) * 18,
-      size: 3 + (index % 4),
-      phase: index * .91,
-      color: colors[index % colors.length]
-    }));
-  }
-
-  function drawStreamer(ctx, streamer, time) {
-    const points = [];
-    const segments = 7;
-    for (let i = 0; i <= segments; i += 1) {
-      const p = i / segments;
-      const y = p * streamer.length;
-      const x = Math.sin(p * 8.2 + time * streamer.wave + streamer.phase) * streamer.amp
-        + Math.sin(time * streamer.wave * 1.7 + streamer.phase) * 8;
-      points.push([x, y]);
-    }
-    const trace = () => {
-      ctx.beginPath();
-      ctx.moveTo(points[0][0], points[0][1]);
-      for (let i = 1; i < points.length; i += 1) {
-        const prev = points[i - 1];
-        const curr = points[i];
-        const cpX = (prev[0] + curr[0]) / 2 + Math.sin(time * streamer.wave * 2 + streamer.phase + i) * streamer.amp * .35;
-        const cpY = (prev[1] + curr[1]) / 2;
-        ctx.quadraticCurveTo(cpX, cpY, curr[0], curr[1]);
-      }
-    };
-    const sway = Math.sin(time * streamer.wave + streamer.phase) * 34;
-    const rotate = Math.sin(time * streamer.wave * 1.4 + streamer.phase) * .55;
-    ctx.save();
-    ctx.translate(streamer.x + sway, streamer.y);
-    ctx.rotate(rotate);
-    trace();
-    ctx.lineWidth = streamer.width + 5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "rgba(20,61,56,.15)";
-    ctx.stroke();
-    trace();
-    ctx.lineWidth = streamer.width;
-    ctx.strokeStyle = streamer.color;
-    ctx.stroke();
-    trace();
-    ctx.lineWidth = Math.max(2, streamer.width * .34);
-    ctx.strokeStyle = "rgba(255,255,255,.62)";
-    ctx.setLineDash([16, 18]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-
-  function drawCompletionCelebration(now) {
-    if (!$("completionCelebration")?.classList.contains("is-visible")) return;
-    resizeCompletionCelebration();
-    const ctx = celebrationContext;
-    if (!ctx) return;
-    const { width, height, ratio } = celebrationSize;
-    const delta = Math.min(.04, Math.max(.001, (now - (celebrationLastFrame || now)) / 1000));
-    celebrationLastFrame = now;
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    celebrationStreamers.forEach((streamer) => {
-      streamer.y += streamer.speed * delta;
-      if (streamer.y > height + streamer.length + 30) streamer.y = -streamer.length - Math.random() * height * .55;
-      drawStreamer(ctx, streamer, now);
-    });
-    celebrationConfetti.forEach((piece) => {
-      piece.y += piece.speed * delta;
-      if (piece.y > height + 20) piece.y = -20 - Math.random() * height * .35;
-      const wobble = Math.sin(now * .003 + piece.phase) * piece.drift;
-      ctx.save();
-      ctx.translate(piece.x + wobble, piece.y);
-      ctx.rotate(now * .004 + piece.phase);
-      ctx.fillStyle = piece.color;
-      ctx.globalAlpha = .72;
-      ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * .72);
-      ctx.globalAlpha = 1;
-      ctx.restore();
-    });
-    celebrationFrameId = requestAnimationFrame(drawCompletionCelebration);
-  }
-
-  function setCompletionCelebration(active) {
-    ensureCompletionCelebration();
-    const box = $("completionCelebration");
-    const app = $("displayApp");
-    app?.classList.toggle("is-complete", active);
-    box?.classList.toggle("is-visible", active);
-    if (active) {
-      if (!celebrationFrameId) {
-        celebrationLastFrame = performance.now();
-        celebrationFrameId = requestAnimationFrame(drawCompletionCelebration);
-      }
-    } else {
-      if (celebrationFrameId) cancelAnimationFrame(celebrationFrameId);
-      celebrationFrameId = null;
-      celebrationLastFrame = 0;
-      if (celebrationContext) celebrationContext.clearRect(0, 0, celebrationSize.width, celebrationSize.height);
-    }
-  }
-
   function renderDisplay(rows, newlyCompletedNumber = null) {
     const count = rows.length;
     const scores = rows.map((row) => Number(row.score) || 0);
@@ -674,8 +510,7 @@ import { supabase, isSupabaseConfigured } from "./src/lib/supabase.js";
     $("displayAverage").textContent = count ? average : "—";
     $("displayHigh").textContent = count ? highest : "—";
     $("displayTrait").textContent = count && leading?.[1] ? leading[0] : "—";
-    const isComplete = count >= MAX_PARTICIPANTS;
-    setCompletionCelebration(isComplete);
+    $("completionMessage").hidden = count < MAX_PARTICIPANTS;
 
     const grid = $("participantGrid");
     grid.innerHTML = "";
